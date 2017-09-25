@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="kidstown">
+      <UniqueIdentifier>{e8229970-9611-4416-942b-ed5f4488545f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kidstown\resource">
+      <UniqueIdentifier>{5db65a6c-8d19-4d8a-a9c0-bd7056a43ba8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="kidstown.cpp">
+      <Filter>kidstown</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icons.ico">
+      <Filter>kidstown\resource</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc">
+      <Filter>kidstown\resource</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="kidstown.h">
+      <Filter>kidstown</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
