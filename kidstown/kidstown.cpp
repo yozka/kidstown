@@ -6,6 +6,7 @@
 #include <mutex>
 #include <locale>
 #include <codecvt>
+#include <list>
 
 #include "kidstown.h"
 using namespace Gdiplus;
@@ -23,9 +24,12 @@ Bitmap*		g_screen			= nullptr;
 Graphics*	g_screenGraphics	= nullptr;
 std::mutex	g_mutexScreen;
 
-std::thread g_workerThread;
+//std::thread g_workerThread;
+HANDLE		g_hThread = 0;
 
-PointF		g_printPos = PointF(0, 0);
+std::wstring g_printText; //текст дл€ отрисовки
+
+static std::list<ASprite*> g_sprites; //спрайты
 ///----------------------------------------------------------------------------
 
 
@@ -35,7 +39,7 @@ PointF		g_printPos = PointF(0, 0);
 void destroyScreen();	//удаление двойного буфера экрана
 void onResize(HWND hWnd);
 void onPaint(HDC hdc);
-void onProcess(const int param);
+DWORD WINAPI onProcess(LPVOID lpThreadParameter);
 LRESULT CALLBACK wndProc(HWND, UINT, WPARAM, LPARAM);
 ///----------------------------------------------------------------------------
 
@@ -95,7 +99,10 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
 	UpdateWindow(g_hWnd);
 
 	//запуск потока с программой пользовател€
-	g_workerThread = std::thread(onProcess, 0);
+	//g_workerThread = std::thread(onProcess, 0);
+	DWORD dwThreadId = 0;
+	g_hThread = CreateThread(NULL,0, onProcess, NULL, 	0, &dwThreadId);
+
 
 
 	//основной процесс
@@ -106,15 +113,38 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
 		DispatchMessage(&msg);
 	}
 
+
+	/*
 	if (g_workerThread.joinable())
 	{
 		g_workerThread.detach();
+		TerminateThread(g_hThread, (unsigned long)0x00);
+		CloseHandle(g_hThread);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
+	*/
+	if (g_hThread)
+	{
+		TerminateThread(g_hThread, (unsigned long)0x00);
+		CloseHandle(g_hThread);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}
+
+
+
+	std::list<ASprite*> sprites;
+	sprites.insert(sprites.begin(), g_sprites.begin(), g_sprites.end());
+	for (const auto &sprite : sprites)
+	{
+		sprite->destroy();
+	}
+	g_sprites.clear();
+	sprites.clear();
 
 	destroyScreen();
 	GdiplusShutdown(gdiplusToken);
 	g_hWnd = 0;
-	return msg.wParam;
+	return (INT)msg.wParam;
 }  // WinMain
 ///----------------------------------------------------------------------------
 
@@ -193,22 +223,6 @@ void destroyScreen()
 
 
 
- ///---------------------------------------------------------------------------
-///
-/// —оздание экрана 
-///
-///
-///----------------------------------------------------------------------------
-Graphics* screen()
-{
-	return g_screenGraphics;
-}
-///----------------------------------------------------------------------------
-
-
-
-
-
 
  ///---------------------------------------------------------------------------
 ///
@@ -267,15 +281,32 @@ void onPaint(HDC hdc)
 	Graphics graphics(hdc);
 
 
-	//отрисовываем буфер
-	if (g_screen)
-	{
-		graphics.DrawImage(g_screen, 0, 0);
-	}
+
+	g_screenGraphics->Clear(Color(255, 255, 255, 255));
+
+	//отрисовываем текст
+	SolidBrush  brush(Color(255, 10, 5, 10));
+	FontFamily  fontFamily(L"Times New Roman");
+	Font        font(&fontFamily, 16, FontStyleRegular, UnitPixel);
+	PointF		pos(10, 10);
+
+	g_screenGraphics->DrawString(g_printText.c_str(), -1, &font, pos, &brush);
+
+
+
 	//отрисовываем спрайты
+	for (const auto &sprite : g_sprites)
+	{
+		if (sprite->isVisible())
+		{
+			sprite->draw(g_screenGraphics);
+		}
+	}
 
 
 
+	//отрисовываем буфер
+	graphics.DrawImage(g_screen, 0, 0);
 	g_mutexScreen.unlock();
 	/*
 	Pen      pen(Color(255, 0, 0, 255));
@@ -335,15 +366,27 @@ void repaint()
 ///
 ///
 ///----------------------------------------------------------------------------
-void onProcess(const int param)
+DWORD WINAPI onProcess(LPVOID lpThreadParameter)
 {
+	//g_hThread = GetCurrentThread();
+	//auto h = GetCurrentThreadId();
 	main();
-	g_workerThread.detach();
+	//g_workerThread.detach();
+	g_hThread = 0;
+	return 0;
 }
 ///----------------------------------------------------------------------------
 
 
 
+
+
+ ///---------------------------------------------------------------------------
+///
+/// преоброзование текста
+///
+///
+///----------------------------------------------------------------------------
 std::wstring s2ws(const std::string& s)
 {
 	int len;
@@ -351,8 +394,11 @@ std::wstring s2ws(const std::string& s)
 	len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
 	std::wstring r(len, L'\0');
 	MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, &r[0], len);
-	return r;
+	return r.substr(0, s.length());
 }
+///----------------------------------------------------------------------------
+
+
 
 
  ///---------------------------------------------------------------------------
@@ -364,23 +410,54 @@ std::wstring s2ws(const std::string& s)
 void print(const std::string &text)
 {
 	const auto ts = s2ws(text);
-
-	 
-
-	auto *graphics = screen();
 	g_mutexScreen.lock();
-	
-
-	SolidBrush  brush(Color(255, 0, 0, 255));
-	FontFamily  fontFamily(L"Times New Roman");
-	Font        font(&fontFamily, 24, FontStyleRegular, UnitPixel);
-
-	graphics->DrawString(ts.c_str(), -1, &font, g_printPos, &brush);
-
+	g_printText.append(ts);
+	const auto n = std::count(g_printText.begin(), g_printText.end(), '\n');
+	if (n > 32)
+	{
+		//нужно отрезать лишние
+		const auto i = g_printText.find_first_of('\n') + 1;
+		g_printText = g_printText.substr(i, g_printText.length() - i);
+	}
 
 	g_mutexScreen.unlock();
+	repaint();
 }
 ///----------------------------------------------------------------------------
+
+
+
+
+void println(const std::string &text) 
+{ 
+	print(std::string("\n") + text);
+}
+
+void print(const int value)
+{
+	print(std::to_string(value));
+}
+
+void println(const int value)
+{
+	println(std::to_string(value));
+}
+
+void print(const float value)
+{
+	std::string str = std::to_string(value);
+	str.erase(str.find_last_not_of('0') + 1, std::string::npos);
+	print(str);
+}
+
+void println(const float value)
+{
+	std::string str = std::to_string(value);
+	str.erase(str.find_last_not_of('0') + 1, std::string::npos);
+	println(str);
+}
+
+
 
 
 
@@ -392,11 +469,8 @@ void print(const std::string &text)
 ///----------------------------------------------------------------------------
 void cls()
 {
-	auto *graphics = screen();
 	g_mutexScreen.lock();
-	graphics->Clear(Color(255, 255, 255, 255));
-
-	g_printPos = PointF(0, 0);
+	g_printText = std::wstring();
 	g_mutexScreen.unlock();
 }
 ///----------------------------------------------------------------------------
@@ -431,16 +505,14 @@ void delay(const int ms)
 ///
 ///
 ///----------------------------------------------------------------------------
-AImage :: AImage(const std::string &fileName)
+ASprite :: ASprite(const std::string &fileName)
 	:
 	mImage(nullptr),
-	mName(std::wstring(fileName.begin(), fileName.end()).c_str())
+	mName(s2ws(fileName))
 {
+	
 }
 ///----------------------------------------------------------------------------
-
-
-
 
 
 
@@ -454,12 +526,9 @@ AImage :: AImage(const std::string &fileName)
 ///
 ///
 ///----------------------------------------------------------------------------
-AImage :: ~AImage()
+ASprite :: ~ASprite()
 {
-	if (mImage)
-	{
-		delete mImage;
-	}
+	destroy();
 }
 ///----------------------------------------------------------------------------
 
@@ -467,6 +536,27 @@ AImage :: ~AImage()
 
 
 
+ ///---------------------------------------------------------------------------
+///
+/// уничтожение
+///
+///
+///----------------------------------------------------------------------------
+void ASprite :: destroy()
+{
+	if (mImage)
+	{
+		delete mImage;
+		mImage = nullptr;
+	}
+
+	if (mInit)
+	{
+		g_sprites.remove(this);
+		mInit = false;
+	}
+}
+///----------------------------------------------------------------------------
 
 
 
@@ -478,25 +568,93 @@ AImage :: ~AImage()
 ///
 ///
 ///----------------------------------------------------------------------------
-void AImage :: draw(const int x, const int y)
+void ASprite:: draw(Graphics *graphics)
 {
 	if (mImage == nullptr)
 	{
 		mImage = new Image(mName.c_str());
 	}
+	graphics->DrawImage(mImage, mX, mY);
+}
+///----------------------------------------------------------------------------
 
-	auto *graphics = screen();
-	if (graphics == nullptr)
-	{
-		return;
-	}
 
-	g_mutexScreen.lock();
-	graphics->DrawImage(mImage, x, y);
-	g_mutexScreen.unlock();
+
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// перенос спрайтов
+///
+///
+///----------------------------------------------------------------------------
+void ASprite :: move(const int x, const int y)
+{
+	init();
+	mX = x;
+	mY = y;
+	mVisible = true;
 	repaint();
 }
+///----------------------------------------------------------------------------
 
 
+
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// показать спрайт
+///
+///
+///----------------------------------------------------------------------------
+void ASprite :: show()
+{
+	init();
+	mVisible = true;
+	repaint();
+}
+///----------------------------------------------------------------------------
+
+
+
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// скрыть спрайт
+///
+///
+///----------------------------------------------------------------------------
+void ASprite :: hide()
+{
+	init();
+	mVisible = false;
+	repaint();
+}
+///----------------------------------------------------------------------------
+
+
+
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// инциализаци€ спрайта
+///
+///
+///----------------------------------------------------------------------------
+void ASprite::init()
+{
+	if (!mInit)
+	{
+		mInit = true;
+		g_sprites.push_back(this);
+	}
+}
 
 

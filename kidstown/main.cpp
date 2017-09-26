@@ -6,23 +6,29 @@
 void main()
 {
 	print("Привет мир!\ntest");
+	println("Новая программа: ");
+	print(-12);
+	println(3.14f);
+	println(-1030);
 
-	AImage robot("robot.png");
-	robot.draw(500, 100);
-
-
-	for (int i = 0; i < 500; i++)
+	int n = 0;
+	while (true)
 	{
-		//cls();
-		robot.draw(i, 150);
-		delay(2);
+		println(n++);
+		for (int i = 0; i < 500; i++)
+		{
+			//cls();
+			robot.move(i, 150);
+			delay(1);
+		}
+
+		println(n++);
+		for (int i = 500; i > 0; i--)
+		{
+			//cls();
+			robot.move(i, 150);
+			delay(1);
+		}
 	}
 
-	for (int i = 500; i > 0; i--)
-	{
-		//cls();
-		robot.draw(i, 150);
-		delay(2);
-	}
-	
 }
