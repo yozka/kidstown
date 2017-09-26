@@ -5,6 +5,9 @@
 
 void main()
 {
+	print("Привет мир!\ntest");
+
+	AImage robot("robot.png");
 	robot.draw(500, 100);
 
 
