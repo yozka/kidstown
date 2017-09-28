@@ -1,0 +1,13 @@
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown robot.png
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown cat.png
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown dog.png
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown kidstown.vcxproj
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown kidstown.vcxproj.filters
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown main.cpp
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown kidstown.h
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown kidstown.cpp
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown icons.ico
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown resource.rc
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown __PreviewImage.png
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown __TemplateIcon.png
+"%ProgramFiles%\WinRAR\WinRAR.exe" a -afzip kidstown MyTemplate.vstemplate

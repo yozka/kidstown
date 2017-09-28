@@ -93,7 +93,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
 	wndClass.cbClsExtra = 0;
 	wndClass.cbWndExtra = 0;
 	wndClass.hInstance = hInstance;
-	wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndClass.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
 	wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wndClass.lpszMenuName = NULL;
@@ -241,10 +241,10 @@ void onKeydown(const WPARAM wParam)
 {
 	switch (wParam)
 	{
-	case VK_LEFT	: keyLeft	= true; break;
-	case VK_RIGHT	: keyRight	= true; break;
-	case VK_UP		: keyUp		= true; break;
-	case VK_DOWN	: keyDown	= true; break;
+	case VK_LEFT	: keyLeft	= true; keyRight = false; break;
+	case VK_RIGHT	: keyRight	= true; keyLeft	 = false; break;
+	case VK_UP		: keyUp		= true; keyDown  = false; break;
+	case VK_DOWN	: keyDown	= true; keyUp    = false; break;
 	case VK_SPACE	: keySpace	= true; break;
 	}
 }
@@ -307,6 +307,9 @@ LRESULT CALLBACK wndProcEdit(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			  g_edit = false;
 			  SetFocus(g_hWnd);
               break;
+		  
+		  default:
+			  return CallWindowProc(g_oldEditProc, hWnd, message, wParam, lParam);
          }
 		 break;
     default:

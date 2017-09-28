@@ -7,6 +7,9 @@
     <Filter Include="kidstown\resource">
       <UniqueIdentifier>{5db65a6c-8d19-4d8a-a9c0-bd7056a43ba8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="kidstown\resource\image">
+      <UniqueIdentifier>{46683fe9-abd8-4928-9b55-4e682e0a77da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -17,6 +20,15 @@
   <ItemGroup>
     <Image Include="icons.ico">
       <Filter>kidstown\resource</Filter>
+    </Image>
+    <Image Include="cat.png">
+      <Filter>kidstown\resource\image</Filter>
+    </Image>
+    <Image Include="dog.png">
+      <Filter>kidstown\resource\image</Filter>
+    </Image>
+    <Image Include="robot.png">
+      <Filter>kidstown\resource\image</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>

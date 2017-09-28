@@ -1,0 +1,30 @@
+<VSTemplate Version="3.0.0" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" Type="Project">
+  <TemplateData>
+    <Name>Kidstown</Name>
+    <Description>Фреймворк для обучения C++</Description>
+    <ProjectType>VC</ProjectType>
+    <ProjectSubType>
+    </ProjectSubType>
+    <SortOrder>1000</SortOrder>
+    <CreateNewFolder>true</CreateNewFolder>
+    <DefaultName>Kidstown</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+    <LocationField>Enabled</LocationField>
+    <EnableLocationBrowseButton>true</EnableLocationBrowseButton>
+	 <Icon>__TemplateIcon.png</Icon>
+    <PreviewImage>__PreviewImage.png</PreviewImage>
+  </TemplateData>
+  <TemplateContent>
+    <Project TargetFileName="kidstown.vcxproj" File="kidstown.vcxproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="false" TargetFileName="$projectname$.vcxproj.filters">kidstown.vcxproj.filters</ProjectItem>
+      <ProjectItem ReplaceParameters="false" TargetFileName="main.cpp" OpenInEditor="true">main.cpp</ProjectItem>
+	  <ProjectItem ReplaceParameters="false" TargetFileName="kidstown.h">kidstown.h</ProjectItem>
+	  <ProjectItem ReplaceParameters="false" TargetFileName="kidstown.cpp">kidstown.cpp</ProjectItem>
+	  <ProjectItem ReplaceParameters="false" TargetFileName="cat.png">cat.png</ProjectItem>
+	  <ProjectItem ReplaceParameters="false" TargetFileName="dog.png">dog.png</ProjectItem>
+	  <ProjectItem ReplaceParameters="false" TargetFileName="robot.png">robot.png</ProjectItem>
+	  <ProjectItem ReplaceParameters="false" TargetFileName="icons.ico">icons.ico</ProjectItem>
+	  <ProjectItem ReplaceParameters="false" TargetFileName="resource.rc">resource.rc</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>
