@@ -36,7 +36,7 @@ public:
 	void destroy();
 
 private:
-	Image *mImage;
+	Image *mImage = nullptr;
 	std::wstring mName;
 	int mX = 0;
 	int mY = 0;
@@ -68,7 +68,24 @@ void cls(); //очистка экрана
 void delay(const int ms); //задержка времени
 void main(); //основаня точка входа
 void repaint();
+int  random(const int max); //генерация случайного числа
+
+void scan(int &value); //ввод чисел
+void scan(float &value); //ввод чисел
+void scan(std::string &value); //ввод строчек
+void scan(char* value, const int size); //ввод строк
 
 
+extern ASprite robot;
+extern ASprite cat;
+extern ASprite dog;
 
-static ASprite robot("robot.png");
+
+extern bool keyLeft;
+extern bool keyRight;
+extern bool keyUp;
+extern bool keyDown;
+extern bool keySpace;
+
+extern int  screenWidth;
+extern int  screenHeight;

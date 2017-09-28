@@ -5,30 +5,61 @@
 
 void main()
 {
-	print("Привет мир!\ntest");
-	println("Новая программа: ");
-	print(-12);
-	println(3.14f);
-	println(-1030);
-
-	int n = 0;
-	while (true)
+	print("Привет мир!");
+	
+	for (int i = 0; i <= 10; i++)
 	{
-		println(n++);
-		for (int i = 0; i < 500; i++)
-		{
-			//cls();
-			robot.move(i, 150);
-			delay(1);
-		}
-
-		println(n++);
-		for (int i = 500; i > 0; i--)
-		{
-			//cls();
-			robot.move(i, 150);
-			delay(1);
-		}
+		println(i);
 	}
 
+	int i = 54;
+	scan(i);
+	println(i);
+
+
+	float f = 34.55f;
+	scan(f);
+	println(f);
+
+
+	char ch[20] = "Привет мир";
+	scan(ch, 20);
+	println(ch);
+
+
+	int n = random(10);
+	println(n);
+	if (n > 5)
+	{
+		cat.move(100, 100);
+	}
+	else
+	{
+		dog.move(100, 100);
+	}
+
+	int x = 0;
+	int y = 0;
+
+	while (true)
+	{
+		if (keyLeft)
+		{
+			x -= 1;
+		}
+		if (keyRight)
+		{
+			x += 1;
+		}
+		if (keyUp)
+		{
+			y -= 1;
+		}
+		if (keyDown)
+		{
+			y += 1;
+		}
+		robot.move(x, y);
+		delay(2);
+	}
 }

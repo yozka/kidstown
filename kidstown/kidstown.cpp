@@ -7,6 +7,8 @@
 #include <locale>
 #include <codecvt>
 #include <list>
+#include <random>
+#include <chrono>
 
 #include "kidstown.h"
 using namespace Gdiplus;
@@ -14,9 +16,28 @@ using namespace Gdiplus;
 ///----------------------------------------------------------------------------
 
 
+ASprite robot("robot.png");
+ASprite cat("cat.png");
+ASprite dog("dog.png");
+
+
+bool keyLeft	= false;
+bool keyRight	= false;
+bool keyUp		= false;
+bool keyDown	= false;
+bool keySpace	= false;
+
+int  screenWidth = 0;
+int  screenHeight = 0;
+
+
+
 //глобальные переменные библиотеки
 HWND		g_hWnd		= 0;
 HWND		g_hScan		= 0;
+bool		g_edit			= false;
+WNDPROC		g_oldEditProc	= nullptr;
+
 
 int			g_width		= 0;
 int			g_height	= 0;
@@ -28,6 +49,7 @@ std::mutex	g_mutexScreen;
 HANDLE		g_hThread = 0;
 
 std::wstring g_printText; //текст для отрисовки
+const int margin = 10;
 
 static std::list<ASprite*> g_sprites; //спрайты
 ///----------------------------------------------------------------------------
@@ -39,8 +61,11 @@ static std::list<ASprite*> g_sprites; //спрайты
 void destroyScreen();	//удаление двойного буфера экрана
 void onResize(HWND hWnd);
 void onPaint(HDC hdc);
+void onKeydown(const WPARAM wParam);
+void onKeyup(const WPARAM wParam);
 DWORD WINAPI onProcess(LPVOID lpThreadParameter);
 LRESULT CALLBACK wndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK wndProcEdit(HWND, UINT, WPARAM, LPARAM);
 ///----------------------------------------------------------------------------
 
 
@@ -89,11 +114,13 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
 		hInstance,                // program instance handle
 		NULL);                    // creation parameters
 
-	/*
-	hread = CreateWindow(L"Edit", NULL, WS_CHILD | WS_VISIBLE  | ES_LEFT, 10, 55, 500, 30, hWnd, NULL, hInstance, NULL);
+
+	g_hScan = CreateWindow(L"Edit", NULL, WS_CHILD | WS_VISIBLE  | ES_LEFT | WS_BORDER, 10, 55, 500, 30, g_hWnd, NULL, hInstance, NULL);
 	auto hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Arial");
-	SendMessage(hread, WM_SETFONT, WPARAM(hFont), TRUE);
-	*/
+	SendMessage(g_hScan, WM_SETFONT, WPARAM(hFont), TRUE);
+	ShowWindow(g_hScan, SW_HIDE);
+	g_oldEditProc = (WNDPROC)SetWindowLongPtr(g_hScan, GWLP_WNDPROC, (LONG_PTR)wndProcEdit);
+	EnableWindow(g_hScan, false);
 
 	ShowWindow(g_hWnd, iCmdShow);
 	UpdateWindow(g_hWnd);
@@ -183,12 +210,111 @@ LRESULT CALLBACK wndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+
+	case WM_KEYDOWN:
+	{
+		onKeydown(wParam);
+		return 0;
+	}
+	case WM_KEYUP:
+	{
+		//char c = MapVirtualKey(wParam, MAPVK_VK_TO_CHAR);
+		onKeyup(wParam);
+		return 0;
+	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 } // WndProc
 ///----------------------------------------------------------------------------
 
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// нажатие на кнопку
+///
+///
+///----------------------------------------------------------------------------
+void onKeydown(const WPARAM wParam)
+{
+	switch (wParam)
+	{
+	case VK_LEFT	: keyLeft	= true; break;
+	case VK_RIGHT	: keyRight	= true; break;
+	case VK_UP		: keyUp		= true; break;
+	case VK_DOWN	: keyDown	= true; break;
+	case VK_SPACE	: keySpace	= true; break;
+	}
+}
+///----------------------------------------------------------------------------
+
+
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// отпускаем кнопку
+///
+///
+///----------------------------------------------------------------------------
+void onKeyup(const WPARAM wParam)
+{
+		switch (wParam)
+	{
+	case VK_LEFT	: keyLeft	= false; break;
+	case VK_RIGHT	: keyRight	= false; break;
+	case VK_UP		: keyUp		= false; break;
+	case VK_DOWN	: keyDown	= false; break;
+	case VK_SPACE	: keySpace	= false; break;
+	}
+}
+///----------------------------------------------------------------------------
+
+
+
+
+///---------------------------------------------------------------------------
+///
+/// Оконная процедура
+///
+///
+///----------------------------------------------------------------------------
+LRESULT CALLBACK wndProcEdit(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+   switch (message)
+   {
+   case WM_ENABLE:
+   {
+	   if (wParam == 1)
+	   {
+		   SetFocus(hWnd);
+	   }
+	   else
+	   {
+		   SetFocus(g_hWnd);
+	   }
+	   break;
+   }
+   
+   case WM_KEYDOWN:
+         switch (wParam)
+         {
+          case VK_RETURN:
+
+			  g_edit = false;
+			  SetFocus(g_hWnd);
+              break;
+         }
+		 break;
+    default:
+         return CallWindowProc(g_oldEditProc, hWnd, message, wParam, lParam);
+   }
+   return 0;
+}
+///----------------------------------------------------------------------------
 
 
 
@@ -241,6 +367,8 @@ void onResize(HWND hWnd)
 	{
 		return;
 	}
+	screenWidth = iWidth;
+	screenHeight = iHeight;
 
 	g_width = iWidth;
 	g_height = iHeight;
@@ -288,7 +416,7 @@ void onPaint(HDC hdc)
 	SolidBrush  brush(Color(255, 10, 5, 10));
 	FontFamily  fontFamily(L"Times New Roman");
 	Font        font(&fontFamily, 16, FontStyleRegular, UnitPixel);
-	PointF		pos(10, 10);
+	PointF		pos((float)margin, (float)margin);
 
 	g_screenGraphics->DrawString(g_printText.c_str(), -1, &font, pos, &brush);
 
@@ -381,6 +509,27 @@ DWORD WINAPI onProcess(LPVOID lpThreadParameter)
 
 
 
+
+ ///---------------------------------------------------------------------------
+///
+/// генерация случайного числа
+///
+///
+///----------------------------------------------------------------------------
+int random(const int max)
+{
+	static std::default_random_engine gen(
+		static_cast<unsigned>(
+			std::chrono::system_clock::now().time_since_epoch().count()
+			)
+	);
+	std::uniform_int_distribution<int> distribution(0, max);
+	return distribution(gen);
+}
+
+
+
+
  ///---------------------------------------------------------------------------
 ///
 /// преоброзование текста
@@ -394,6 +543,25 @@ std::wstring s2ws(const std::string& s)
 	len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
 	std::wstring r(len, L'\0');
 	MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, &r[0], len);
+	return r.substr(0, s.length());
+}
+///----------------------------------------------------------------------------
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// преоброзование текста
+///
+///
+///----------------------------------------------------------------------------
+std::string sw2s(const std::wstring& s)
+{
+	int len;
+	int slength = (int)s.length() + 1;
+	len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
+	std::string r(len, L'\0');
+	WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
 	return r.substr(0, s.length());
 }
 ///----------------------------------------------------------------------------
@@ -591,11 +759,14 @@ void ASprite:: draw(Graphics *graphics)
 ///----------------------------------------------------------------------------
 void ASprite :: move(const int x, const int y)
 {
-	init();
-	mX = x;
-	mY = y;
-	mVisible = true;
-	repaint();
+	if (x != mX || y != mY || !mVisible)
+	{
+		init();
+		mX = x;
+		mY = y;
+		mVisible = true;
+		repaint();
+	}
 }
 ///----------------------------------------------------------------------------
 
@@ -656,5 +827,129 @@ void ASprite::init()
 		g_sprites.push_back(this);
 	}
 }
+///----------------------------------------------------------------------------
 
 
+
+
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// ввод строчек
+///
+///
+///----------------------------------------------------------------------------
+void scan(std::string &value)
+{
+	g_edit = true;
+
+	SetWindowTextA(g_hScan, value.c_str());
+	ShowWindow(g_hScan, SW_SHOW);
+	EnableWindow(g_hScan, true);
+	SetFocus(g_hScan);
+	SetActiveWindow(g_hScan);
+	SendMessage(g_hScan, EM_SETSEL, 0, -1);
+	
+	const auto n = std::count(g_printText.begin(), g_printText.end(), '\n') + 1;
+	int top = margin + (int)((float)n * 18.5f);
+
+	SetWindowPos(g_hScan, 0, margin, top, 0, 0, SWP_NOSIZE);
+
+	while (g_edit)
+	{
+		delay(100);
+	}
+
+	ShowWindow(g_hScan, SW_HIDE);
+	EnableWindow(g_hScan, false);
+	SetFocus(g_hWnd);
+	SetActiveWindow(g_hWnd);
+
+	
+	int nLn = GetWindowTextLength(g_hScan);
+	
+
+	std::wstring str;
+	str.resize(nLn + 1);
+
+	GetWindowText(g_hScan, (LPTSTR)str.data(), nLn + 1);
+	str = str.substr(0, nLn);
+
+	value = sw2s(str);
+}
+///----------------------------------------------------------------------------
+
+
+
+
+
+///---------------------------------------------------------------------------
+///
+/// ввод чисел
+///
+///
+///----------------------------------------------------------------------------
+void scan(int &value)
+{
+	std::string text;
+	if (value != 0)
+	{
+		text = std::to_string(value);
+	}
+	scan(text);
+	value = std::atoi(text.c_str());
+}
+///----------------------------------------------------------------------------
+
+
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// ввод чисел
+///
+///
+///----------------------------------------------------------------------------
+void scan(float &value)
+{
+	std::string text;
+	if (value != 0)
+	{
+		text = std::to_string(value);
+	}
+	scan(text);
+	value = (float)std::atof(text.c_str());
+}
+///----------------------------------------------------------------------------
+
+
+
+
+
+
+ ///---------------------------------------------------------------------------
+///
+/// ввод строк
+///
+///
+///----------------------------------------------------------------------------
+void scan(char* value, const int size)
+{
+	std::string text;
+	text.resize(size);
+	size_t sz = (size_t)(min((int)strlen(value), size));
+
+	std::memcpy(&text.at(0), value, sz);
+
+	scan(text);
+
+	sz = (size_t)(max((int)text.length() + 1, size));
+
+	std::memset(value, 0, sz);
+	std::memcpy(value, &text.at(0), text.length());
+
+}
+///----------------------------------------------------------------------------
